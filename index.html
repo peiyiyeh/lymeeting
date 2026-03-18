@@ -72,31 +72,37 @@ async function fetchID21Data() {
     const table = document.getElementById('resultTable');
     const tbody = document.getElementById('tableBody');
 
-    // 使用 CORS Proxy 解決瀏覽器封鎖問題
-   // 更換 Proxy 網址
-const proxy = "https://api.allorigins.win/get?url=";
-const targetUrl = `https://data.ly.gov.tw/odw/ID21Action.action?term=${term}&sessionPeriod=${session}&meetingDateS=${dateS}&meetingDateE=${dateE}&fileType=json`;
+    // 換成這個強大的代理網址
+    const proxy = "https://api.allorigins.win/get?url=";
+    const targetUrl = `https://data.ly.gov.tw/odw/ID21Action.action?term=${term}&sessionPeriod=${session}&meetingDateS=${dateS}&meetingDateE=${dateE}&fileType=json`;
 
-try {
-    // allorigins 的用法是把網址接在後面，它會回傳一個包含 contents 欄位的 JSON
-    const response = await fetch(proxy + encodeURIComponent(targetUrl));
-    
-    if (!response.ok) throw new Error("網路請求失敗");
+    status.innerText = "⏳ 正在透過 AllOrigins 代理抓取資料...";
+    tbody.innerHTML = "";
+    table.style.display = "none";
 
-    const wrapper = await response.json();
-    // 注意：allorigins 會把原始資料塞在 .contents 裡面，而且是字串格式
-    const data = JSON.parse(wrapper.contents); 
-    const records = data.dataList;
-    
-    // ... 接下來處理 records 的程式碼 ...
-}
+    try {
+        // 這裡需要用 encodeURIComponent 把網址包起來
+        const response = await fetch(proxy + encodeURIComponent(targetUrl));
+        
+        if (!response.ok) throw new Error("代理伺服器連線失敗");
+
+        const wrapper = await response.json();
+        
+        // 重要：AllOrigins 的資料藏在 .contents 裡面，而且是字串，所以要再 parse 一次
+        const data = JSON.parse(wrapper.contents);
+        const records = data.dataList;
+
+        if (!records || records.length === 0) {
+            status.innerText = "❌ 找不到符合條件的資料（請確認該日期是否有會議）。";
+            return;
+        }
 
         records.forEach((item, index) => {
             const row = `<tr>
                 <td>${index + 1}</td>
-                <td style="white-space:nowrap;">${item.meetingDate || '無日期'}</td>
-                <td>${item.meetingName || '無名稱'}</td>
-                <td style="font-size:13px; color:#666;">${item.subject ? item.subject.substring(0, 100) + '...' : '無案由'}</td>
+                <td style="white-space:nowrap;">${item.meetingDate || '-'}</td>
+                <td>${item.meetingName || '-'}</td>
+                <td style="font-size:13px; color:#666;">${item.subject ? item.subject.substring(0, 100) + '...' : '-'}</td>
                 <td><a href="${item.docUrl}" class="doc-btn" target="_blank">下載 DOC</a></td>
             </tr>`;
             tbody.innerHTML += row;
@@ -106,7 +112,7 @@ try {
         table.style.display = "table";
 
     } catch (error) {
-        status.innerText = "⚠️ 抓取失敗：可能是代理伺服器繁忙，請稍候再試，或檢查 API 連結。";
+        status.innerText = "⚠️ 抓取失敗：請檢查網路或日期格式是否正確。";
         console.error("Error details:", error);
     }
 }
