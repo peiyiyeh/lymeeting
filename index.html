@@ -73,26 +73,23 @@ async function fetchID21Data() {
     const tbody = document.getElementById('tableBody');
 
     // 使用 CORS Proxy 解決瀏覽器封鎖問題
-    const proxy = "https://corsproxy.io/?";
-    const targetUrl = `https://data.ly.gov.tw/odw/ID21Action.action?term=${term}&sessionPeriod=${session}&meetingDateS=${dateS}&meetingDateE=${dateE}&fileType=json`;
+   // 更換 Proxy 網址
+const proxy = "https://api.allorigins.win/get?url=";
+const targetUrl = `https://data.ly.gov.tw/odw/ID21Action.action?term=${term}&sessionPeriod=${session}&meetingDateS=${dateS}&meetingDateE=${dateE}&fileType=json`;
 
-    status.innerText = "⏳ 正在穿越門禁抓取立法院資料...";
-    tbody.innerHTML = "";
-    table.style.display = "none";
+try {
+    // allorigins 的用法是把網址接在後面，它會回傳一個包含 contents 欄位的 JSON
+    const response = await fetch(proxy + encodeURIComponent(targetUrl));
+    
+    if (!response.ok) throw new Error("網路請求失敗");
 
-    try {
-        // 拼接代理網址
-        const response = await fetch(proxy + encodeURIComponent(targetUrl));
-        
-        if (!response.ok) throw new Error("網路請求失敗");
-
-        const data = await response.json();
-        const records = data.dataList;
-
-        if (!records || records.length === 0) {
-            status.innerText = "❌ 找不到符合條件的資料，請檢查日期格式。";
-            return;
-        }
+    const wrapper = await response.json();
+    // 注意：allorigins 會把原始資料塞在 .contents 裡面，而且是字串格式
+    const data = JSON.parse(wrapper.contents); 
+    const records = data.dataList;
+    
+    // ... 接下來處理 records 的程式碼 ...
+}
 
         records.forEach((item, index) => {
             const row = `<tr>
