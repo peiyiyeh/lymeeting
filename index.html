@@ -64,55 +64,34 @@
 
 <script>
 async function fetchID21Data() {
-    const term = document.getElementById('term').value;
-    const session = document.getElementById('session').value;
-    const dateS = document.getElementById('dateS').value;
-    const dateE = document.getElementById('dateE').value;
-    const status = document.getElementById('status');
-    const table = document.getElementById('resultTable');
-    const tbody = document.getElementById('tableBody');
+    // ... 前面的變數讀取都維持不變 ...
 
-    // 換成這個強大的代理網址
-    const proxy = "https://api.allorigins.win/get?url=";
+    // 換成這個新的 Proxy 網址格式
     const targetUrl = `https://data.ly.gov.tw/odw/ID21Action.action?term=${term}&sessionPeriod=${session}&meetingDateS=${dateS}&meetingDateE=${dateE}&fileType=json`;
+    
+    // 使用 corsproxy.org 的格式：直接把 https:// 換成後綴
+    const proxyUrl = `https://corsproxy.org/?${encodeURIComponent(targetUrl)}`;
 
-    status.innerText = "⏳ 正在透過 AllOrigins 代理抓取資料...";
-    tbody.innerHTML = "";
-    table.style.display = "none";
+    status.innerText = "⏳ 正在強力穿越門禁抓取資料...";
 
     try {
-        // 這裡需要用 encodeURIComponent 把網址包起來
-        const response = await fetch(proxy + encodeURIComponent(targetUrl));
+        const response = await fetch(proxyUrl);
         
-        if (!response.ok) throw new Error("代理伺服器連線失敗");
+        if (!response.ok) throw new Error("連線失敗");
 
-        const wrapper = await response.json();
-        
-        // 重要：AllOrigins 的資料藏在 .contents 裡面，而且是字串，所以要再 parse 一次
-        const data = JSON.parse(wrapper.contents);
+        const data = await response.json();
+        // 注意：corsproxy.org 通常直接回傳原始 JSON，不需要再 parse .contents
         const records = data.dataList;
 
         if (!records || records.length === 0) {
-            status.innerText = "❌ 找不到符合條件的資料（請確認該日期是否有會議）。";
+            status.innerText = "❌ 找不到資料（請確認該日期是否有會議）。";
             return;
         }
 
-        records.forEach((item, index) => {
-            const row = `<tr>
-                <td>${index + 1}</td>
-                <td style="white-space:nowrap;">${item.meetingDate || '-'}</td>
-                <td>${item.meetingName || '-'}</td>
-                <td style="font-size:13px; color:#666;">${item.subject ? item.subject.substring(0, 100) + '...' : '-'}</td>
-                <td><a href="${item.docUrl}" class="doc-btn" target="_blank">下載 DOC</a></td>
-            </tr>`;
-            tbody.innerHTML += row;
-        });
-
-        status.innerText = `✅ 成功找到 ${records.length} 筆院會紀錄！`;
-        table.style.display = "table";
-
+        // ... 接下來處理 records 的表格顯示 (與之前相同) ...
+        
     } catch (error) {
-        status.innerText = "⚠️ 抓取失敗：請檢查網路或日期格式是否正確。";
+        status.innerText = "⚠️ 抓取依舊失敗。建議更換日期測試，或稍後再試。";
         console.error("Error details:", error);
     }
 }
